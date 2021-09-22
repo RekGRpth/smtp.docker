@@ -67,7 +67,7 @@ function update(message) {
         delete array[message, i, 2]
     }
     delete len[message]
-    delete disconnect[message]
+    delete connected[message]
 }
 BEGIN {
     FS = "|"
@@ -101,6 +101,7 @@ BEGIN {
 }
 "report|smtp-in|tx-begin" == $1_$4_$5 {
     message[$6] = $7
+    connected[$7] ++
     next
 }
 "report|smtp-in|tx-reset" == $1_$4_$5 {
@@ -108,10 +109,10 @@ BEGIN {
     next
 }
 "report|smtp-in|link-disconnect" == $1_$4_$5 {
-    if (disconnect[message[$6]]) {
+    if (connected[message[$6]] == 1) {
         update(message[$6])
     } else {
-        disconnect[message[$6]] = 1
+        connected[message[$6]] --
     }
     delete message[$6]
     delete where[$6]
@@ -125,6 +126,7 @@ BEGIN {
     output[$6] = sprintf("%s%s\r\n", output[$6], $7)
     if (match($7, /^550.+<(.+)>/, m)) {
         print(m[1]) > "/dev/stderr"
+        len[message[$6]] ++
         array[message[$6], len[message[$6]], 1] = "permfail"
         array[message[$6], len[message[$6]], 2] = m[1]
     }
@@ -132,26 +134,24 @@ BEGIN {
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
     message[$6] = $7
+    connected[$7] ++
     next
 }
 "report|smtp-out|tx-reset" == $1_$4_$5 {
     output[message[$6]] = output[$6]
     next
 }
-"report|smtp-out|tx-envelope" == $1_$4_$5 {
-    len[$7] ++
-    next
-}
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
+    len[$7] ++
     array[$7, len[$7], 1] = $8
     array[$7, len[$7], 2] = $9
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    if (disconnect[message[$6]]) {
+    if (connected[message[$6]] == 1) {
         update(message[$6])
     } else {
-        disconnect[message[$6]] = 1
+        connected[message[$6]] --
     }
     delete message[$6]
     delete output[$6]
