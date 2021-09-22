@@ -1,5 +1,5 @@
 function connect() {
-    conn = pg_connect("user=email application_name=smtp")
+    conn = pg_connect("application_name=smtp target_session_attrs=read-write")
     if (!conn) {
         print("!pg_connect") > "/dev/stderr"
         exit 1

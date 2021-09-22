@@ -10,6 +10,7 @@ docker run \
     --env GROUP_ID="$(id -g)" \
     --env LANG=ru_RU.UTF-8 \
     --env PGHOST=postgres \
+    --env PGUSER=email \
     --env TZ=Asia/Yekaterinburg \
     --env USER_ID="$(id -u)" \
     --hostname smtp \
