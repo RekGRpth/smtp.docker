@@ -10,8 +10,8 @@ function connect() {
         print("!pg_prepare") > "/dev/stderr"
         exit 1
     }
-    history = pg_prepare(conn, "UPDATE history SET result = $1 WHERE recipient = $2 AND email_id = (SELECT id FROM email WHERE message_id = ('x'||$3)::bit(28)::int)")
-    if (!history) {
+    email = pg_prepare(conn, "UPDATE email SET result[array_position(recipient, $2)] = $1 WHERE message_id = ('x'||$3)::bit(28)::int")
+    if (!email) {
         print(pg_errormessage(conn)) > "/dev/stderr"
         print("!pg_prepare") > "/dev/stderr"
         exit 1
@@ -80,10 +80,10 @@ BEGIN {
     val[1] = $8
     val[2] = $9
     val[3] = $7
-    res = pg_execprepared(conn, history, 3, val)
+    res = pg_execprepared(conn, email, 3, val)
     if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
         connect()
-        res = pg_execprepared(conn, history, 3, val)
+        res = pg_execprepared(conn, email, 3, val)
     }
     print(res) > "/dev/stderr"
     if (res) {
