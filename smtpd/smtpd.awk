@@ -48,7 +48,7 @@ BEGIN {
     session = $6
 }
 "report|smtp-in|protocol-server" == $1_$4_$5 {
-    status[session] = sprintf("%s%s\r\n", status[session], $7)
+    protocol[session] = sprintf("%s%s\r\n", protocol[session], $7)
     next
 }
 "report|smtp-in|tx-begin" == $1_$4_$5 {
@@ -56,20 +56,20 @@ BEGIN {
     next
 }
 "report|smtp-in|tx-reset" == $1_$4_$5 {
-    status[message[session]] = status[session]
+    protocol[message[session]] = protocol[session]
     next
 }
 "report|smtp-in|link-disconnect" == $1_$4_$5 {
     delete message[session]
-    delete status[session]
+    delete protocol[session]
     next
 }
 "report|smtp-out|protocol-client" == $1_$4_$5 {
-    status[session] = sprintf("%s%s\r\n", status[session], $7)
+    protocol[session] = sprintf("%s%s\r\n", protocol[session], $7)
     next
 }
 "report|smtp-out|protocol-server" == $1_$4_$5 {
-    status[session] = sprintf("%s%s\r\n", status[session], $7)
+    protocol[session] = sprintf("%s%s\r\n", protocol[session], $7)
     next
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
@@ -98,9 +98,9 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    if (status[message[session]]) {
-        paramValues[1] = status[session]
-        paramValues[2] = status[message[session]]
+    if (protocol[message[session]]) {
+        paramValues[1] = protocol[session]
+        paramValues[2] = protocol[message[session]]
         res = pg_execprepared(conn, stmtName, 2, paramValues)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
@@ -116,10 +116,10 @@ BEGIN {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
         delete paramValues
-        delete status[message[session]]
+        delete protocol[message[session]]
     }
     delete message[session]
-    delete status[session]
+    delete protocol[session]
     next
 }
 END {
