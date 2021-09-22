@@ -10,7 +10,7 @@ function connect() {
         print("!pg_prepare") > "/dev/stderr"
         exit 1
     }
-    email = pg_prepare(conn, "UPDATE email SET result[array_position(recipient, $2)] = $1 WHERE message_id = ('x'||$3)::bit(28)::int")
+    email = pg_prepare(conn, "UPDATE email SET result[array_position(recipient, $3)] = $2 WHERE message_id = ('x'||$1)::bit(28)::int")
     if (!email) {
         print(pg_errormessage(conn)) > "/dev/stderr"
         print("!pg_prepare") > "/dev/stderr"
@@ -73,9 +73,9 @@ BEGIN {
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
-    val[1] = $8
-    val[2] = $9
-    val[3] = $7
+    val[1] = $7
+    val[2] = $8
+    val[3] = $9
     res = pg_execprepared(conn, email, 3, val)
     if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
         connect()
