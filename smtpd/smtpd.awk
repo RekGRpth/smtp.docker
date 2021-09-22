@@ -64,16 +64,16 @@ BEGIN {
     delete status[session]
     next
 }
-"report|smtp-out|tx-begin" == $1_$4_$5 {
-    message[session] = $7
-    next
-}
 "report|smtp-out|protocol-client" == $1_$4_$5 {
     status[session] = sprintf("%s%s\r\n", status[session], $7)
     next
 }
 "report|smtp-out|protocol-server" == $1_$4_$5 {
     status[session] = sprintf("%s%s\r\n", status[session], $7)
+    next
+}
+"report|smtp-out|tx-begin" == $1_$4_$5 {
+    message[session] = $7
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
