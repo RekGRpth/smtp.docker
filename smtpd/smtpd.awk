@@ -17,6 +17,55 @@ function connect() {
         exit 1
     }
 }
+function update(session) {
+    if (protocol[message[session]]) {
+        val[1] = protocol[session]
+        val[2] = protocol[message[session]]
+        res = pg_execprepared(conn, task, 2, val)
+        if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
+            connect()
+            res = pg_execprepared(conn, task, 2, val)
+        }
+        print(res) > "/dev/stderr"
+        if (res) {
+            if (res != "OK 1") {
+                print(pg_errormessage(conn)) > "/dev/stderr"
+            }
+            pg_clear(res)
+        } else {
+            print(pg_errormessage(conn)) > "/dev/stderr"
+        }
+        delete val
+        delete protocol[message[session]]
+    }
+    for (i = 1; i <= len[message[session]]; i++) {
+        val[1] = message[session]
+        val[2] = array[message[session], i, 1]
+        val[3] = array[message[session], i, 2]
+        res = pg_execprepared(conn, email, 3, val)
+        if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
+            connect()
+            res = pg_execprepared(conn, email, 3, val)
+        }
+        print(res) > "/dev/stderr"
+        if (res) {
+            if (res != "OK 1") {
+                print(pg_errormessage(conn)) > "/dev/stderr"
+            }
+            pg_clear(res)
+        } else {
+            print(pg_errormessage(conn)) > "/dev/stderr"
+        }
+        delete val
+    }
+    for (i = 1; i <= len[message[session]]; i++) {
+        delete array[message[session], i, 1]
+        delete array[message[session], i, 2]
+    }
+    delete len[message[session]]
+    delete message[session]
+    delete protocol[session]
+}
 BEGIN {
     FS = "|"
     OFS = FS
@@ -86,53 +135,7 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    if (protocol[message[$6]]) {
-        val[1] = protocol[$6]
-        val[2] = protocol[message[$6]]
-        res = pg_execprepared(conn, task, 2, val)
-        if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
-            connect()
-            res = pg_execprepared(conn, task, 2, val)
-        }
-        print(res) > "/dev/stderr"
-        if (res) {
-            if (res != "OK 1") {
-                print(pg_errormessage(conn)) > "/dev/stderr"
-            }
-            pg_clear(res)
-        } else {
-            print(pg_errormessage(conn)) > "/dev/stderr"
-        }
-        delete val
-        delete protocol[message[$6]]
-    }
-    for (i = 1; i <= len[message[$6]]; i++) {
-        val[1] = message[$6]
-        val[2] = array[message[$6], i, 1]
-        val[3] = array[message[$6], i, 2]
-        res = pg_execprepared(conn, email, 3, val)
-        if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
-            connect()
-            res = pg_execprepared(conn, email, 3, val)
-        }
-        print(res) > "/dev/stderr"
-        if (res) {
-            if (res != "OK 1") {
-                print(pg_errormessage(conn)) > "/dev/stderr"
-            }
-            pg_clear(res)
-        } else {
-            print(pg_errormessage(conn)) > "/dev/stderr"
-        }
-        delete val
-    }
-    for (i = 1; i <= len[message[$6]]; i++) {
-        delete array[message[$6], i, 1]
-        delete array[message[$6], i, 2]
-    }
-    delete len[message[$6]]
-    delete message[$6]
-    delete protocol[$6]
+    update($6)
     next
 }
 END {
