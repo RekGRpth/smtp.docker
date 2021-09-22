@@ -42,4 +42,4 @@ RUN set -eux; \
     find /usr -type f -name "*.la" -delete; \
     rm -rf "${HOME}" /usr/share/doc /usr/share/man /usr/local/share/doc /usr/local/share/man; \
     echo done
-ADD etc /etc
+ADD smtpd /etc/smtpd
