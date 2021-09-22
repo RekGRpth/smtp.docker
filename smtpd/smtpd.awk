@@ -17,6 +17,9 @@ function connect() {
         exit 1
     }
 }
+function push(array, element) {
+    array[length(array)+1] = element
+}
 BEGIN {
     FS = "|"
     OFS = FS
@@ -76,21 +79,7 @@ BEGIN {
     val[1] = $7
     val[2] = $8
     val[3] = $9
-    res = pg_execprepared(conn, email, 3, val)
-    if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
-        connect()
-        res = pg_execprepared(conn, email, 3, val)
-    }
-    print(res) > "/dev/stderr"
-    if (res) {
-        if (res != "OK 1") {
-            print(pg_errormessage(conn)) > "/dev/stderr"
-        }
-        pg_clear(res)
-    } else {
-        print(pg_errormessage(conn)) > "/dev/stderr"
-    }
-    delete val
+    push(array[message[$6]], val)
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
@@ -114,6 +103,25 @@ BEGIN {
         delete val
         delete protocol[message[$6]]
     }
+    for (i = 1; i <= length(array[message[$6]]); i++) {
+        val = array[message[$6]][i]
+        res = pg_execprepared(conn, email, 3, val)
+        if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
+            connect()
+            res = pg_execprepared(conn, email, 3, val)
+        }
+        print(res) > "/dev/stderr"
+        if (res) {
+            if (res != "OK 1") {
+                print(pg_errormessage(conn)) > "/dev/stderr"
+            }
+            pg_clear(res)
+        } else {
+            print(pg_errormessage(conn)) > "/dev/stderr"
+        }
+        delete val
+    }
+    delete array[message[$6]]
     delete message[$6]
     delete protocol[$6]
     next
