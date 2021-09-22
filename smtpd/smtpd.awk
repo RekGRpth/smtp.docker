@@ -17,10 +17,10 @@ function connect() {
         exit 1
     }
 }
-function update(session) {
-    if (protocol[message[session]]) {
-        val[1] = protocol[session]
-        val[2] = protocol[message[session]]
+function update(message) {
+    if (where[message]) {
+        val[1] = output[message]
+        val[2] = where[message]
         res = pg_execprepared(conn, task, 2, val)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
@@ -36,12 +36,12 @@ function update(session) {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
         delete val
-        delete protocol[message[session]]
+        delete where[message]
     }
-    for (i = 1; i <= len[message[session]]; i++) {
-        val[1] = message[session]
-        val[2] = array[message[session], i, 1]
-        val[3] = array[message[session], i, 2]
+    for (i = 1; i <= len[message]; i++) {
+        val[1] = message
+        val[2] = array[message, i, 1]
+        val[3] = array[message, i, 2]
         print(val[1]) > "/dev/stderr"
         print(val[2]) > "/dev/stderr"
         print(val[3]) > "/dev/stderr"
@@ -61,12 +61,11 @@ function update(session) {
         }
         delete val
     }
-    for (i = 1; i <= len[message[session]]; i++) {
-        delete array[message[session], i, 1]
-        delete array[message[session], i, 2]
+    for (i = 1; i <= len[message]; i++) {
+        delete array[message, i, 1]
+        delete array[message, i, 2]
     }
-    delete len[message[session]]
-    delete disconnect[message[session]]
+    delete len[message]
 }
 BEGIN {
     FS = "|"
@@ -95,34 +94,28 @@ BEGIN {
     }
 }
 "report|smtp-in|protocol-server" == $1_$4_$5 {
-    protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
+    where[$6] = sprintf("%s%s\r\n", where[$6], $7)
     next
 }
 "report|smtp-in|tx-begin" == $1_$4_$5 {
     message[$6] = $7
-    disconnect[$7] = false
     next
 }
 "report|smtp-in|tx-reset" == $1_$4_$5 {
-    protocol[message[$6]] = protocol[$6]
+    where[message[$6]] = where[$6]
     next
 }
 "report|smtp-in|link-disconnect" == $1_$4_$5 {
-    if (disconnect[message[$6]]) {
-        update($6)
-    } else {
-        disconnect[message[$6]] = true
-    }
-#    delete message[$6]
-#    delete protocol[$6]
+    delete message[$6]
+    delete where[$6]
     next
 }
 "report|smtp-out|protocol-client" == $1_$4_$5 {
-    protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
+    output[$6] = sprintf("%s%s\r\n", output[$6], $7)
     next
 }
 "report|smtp-out|protocol-server" == $1_$4_$5 {
-    protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
+    output[$6] = sprintf("%s%s\r\n", output[$6], $7)
     if (match($7, /^550.+<(.+)>/, m)) {
         print(m[1]) > "/dev/stderr"
         array[message[$6], len[message[$6]], 1] = "permfail"
@@ -132,6 +125,10 @@ BEGIN {
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
     message[$6] = $7
+    next
+}
+"report|smtp-out|tx-reset" == $1_$4_$5 {
+    output[message[$6]] = output[$6]
     next
 }
 "report|smtp-out|tx-envelope" == $1_$4_$5 {
@@ -144,13 +141,9 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    if (disconnect[message[$6]]) {
-        update($6)
-    } else {
-        disconnect[message[$6]] = true
-    }
-#    delete message[$6]
-#    delete protocol[$6]
+    update(message[$6])
+    delete message[$6]
+    delete output[$6]
     next
 }
 END {
