@@ -32,9 +32,8 @@ BEGIN {
 }
 "config|subsystem" == $1_$2 {
     print($0) > "/dev/stderr"
-    subsystem = $3
-    print("register", "report", subsystem, "*") > "/dev/stderr"
-    print("register", "report", subsystem, "*")
+    print("register", "report", $3, "*") > "/dev/stderr"
+    print("register", "report", $3, "*")
     next
 }
 "report" == $1 {
@@ -43,37 +42,34 @@ BEGIN {
         print("invalid filter command: expected >5 fields!") > "/dev/stderr"
         exit 1
     }
-    subsystem = $4
-    event = $5
-    session = $6
 }
 "report|smtp-in|protocol-server" == $1_$4_$5 {
-    protocol[session] = sprintf("%s%s\r\n", protocol[session], $7)
+    protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
     next
 }
 "report|smtp-in|tx-begin" == $1_$4_$5 {
-    message[session] = $7
+    message[$6] = $7
     next
 }
 "report|smtp-in|tx-reset" == $1_$4_$5 {
-    protocol[message[session]] = protocol[session]
+    protocol[message[$6]] = protocol[$6]
     next
 }
 "report|smtp-in|link-disconnect" == $1_$4_$5 {
-    delete message[session]
-    delete protocol[session]
+    delete message[$6]
+    delete protocol[$6]
     next
 }
 "report|smtp-out|protocol-client" == $1_$4_$5 {
-    protocol[session] = sprintf("%s%s\r\n", protocol[session], $7)
+    protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
     next
 }
 "report|smtp-out|protocol-server" == $1_$4_$5 {
-    protocol[session] = sprintf("%s%s\r\n", protocol[session], $7)
+    protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
     next
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
-    message[session] = $7
+    message[$6] = $7
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
@@ -98,9 +94,9 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    if (protocol[message[session]]) {
-        val[1] = protocol[session]
-        val[2] = protocol[message[session]]
+    if (protocol[message[$6]]) {
+        val[1] = protocol[$6]
+        val[2] = protocol[message[$6]]
         res = pg_execprepared(conn, task, 2, val)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
@@ -116,10 +112,10 @@ BEGIN {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
         delete val
-        delete protocol[message[session]]
+        delete protocol[message[$6]]
     }
-    delete message[session]
-    delete protocol[session]
+    delete message[$6]
+    delete protocol[$6]
     next
 }
 END {
