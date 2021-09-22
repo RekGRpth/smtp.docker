@@ -9,11 +9,11 @@ docker run \
     --detach \
     --env GROUP_ID="$(id -g)" \
     --env LANG=ru_RU.UTF-8 \
+    --env PGHOST=postgres \
     --env TZ=Asia/Yekaterinburg \
     --env USER_ID="$(id -u)" \
     --hostname smtp \
     --mount type=bind,source=/etc/certs,destination=/etc/certs,readonly \
-    --mount type=bind,source=/run/postgresql,destination=/run/postgresql \
     --mount type=volume,source=smtp,destination=/home \
     --name smtp \
     --network name=docker,alias=smtp."$(hostname -d)" \
