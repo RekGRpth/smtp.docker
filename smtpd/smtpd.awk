@@ -48,40 +48,34 @@ BEGIN {
     session = $6
 }
 "report|smtp-in|tx-begin" == $1_$4_$5 {
-    message = $7
-    message_session[session] = message
+    message_session[session] = $7
     next
 }
-"report|smtp-in|tx-reset" == $1_$4_$5 {
-    if (message_session[session]) {
-        status_message[message_session[session]] = status_session[session]
-    }
-    delete status_session[session]
+"report|smtp-in|protocol-server" == $1_$4_$5 {
+    status_message_in[message_session[session]] = sprintf("%s%s\r\n", status_message_in[message_session[session]], $7)
     next
 }
-"report|protocol-server" == $1_$5 {
-    status_session[session] = sprintf("%s%s\r\n", status_session[session], $7)
-    next
-}
-"report|smtp-out|protocol-client" == $1_$4_$5 {
-    status_session[session] = sprintf("%s%s\r\n", status_session[session], $7)
+"report|smtp-in|link-disconnect" == $1_$4_$5 {
+    delete message_session[session]
     next
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
-    message = $7
-    message_session[session] = message
-    count_message[message] ++
+    message_session[session] = $7
+    next
+}
+"report|smtp-out|protocol-client" == $1_$4_$5 {
+    status_session_out[session] = sprintf("%s%s\r\n", status_session_out[session], $7)
+    next
+}
+"report|smtp-out|protocol-server" == $1_$4_$5 {
+    status_session_out[session] = sprintf("%s%s\r\n", status_session_out[session], $7)
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
-    message = $7
-    result = $8
-    address = $9
-    nParams = 3
-    paramValues[1] = result
-    paramValues[2] = address
-    paramValues[3] = message
-    res = pg_execprepared(conn, stmtName2, nParams, paramValues)
+    paramValues[1] = $8
+    paramValues[2] = $9
+    paramValues[3] = $7
+    res = pg_execprepared(conn, stmtName2, 3, paramValues)
     if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
         connect()
         res = pg_execprepared(conn, stmtName2, nParams, paramValues)
@@ -99,11 +93,10 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    if (status_message[message_session[session]]) {
-        nParams = 2
-        paramValues[1] = status_session[session]
-        paramValues[2] = status_message[message_session[session]]
-        res = pg_execprepared(conn, stmtName, nParams, paramValues)
+    if (status_message_in[message_session[session]]) {
+        paramValues[1] = status_session_out[session]
+        paramValues[2] = status_message_in[message_session[session]]
+        res = pg_execprepared(conn, stmtName, 2, paramValues)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
             res = pg_execprepared(conn, stmtName, nParams, paramValues)
@@ -118,13 +111,9 @@ BEGIN {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
         delete paramValues
+        delete status_message_in[message_session[session]]
     }
-    delete status_session[session]
-    count_message[message_session[session]] --
-    if (count_message[message_session[session]] <= 0) {
-        delete status_message[message_session[session]]
-        delete count_message[message_session[session]]
-    }
+    delete status_session_out[session]
     delete message_session[session]
     next
 }
