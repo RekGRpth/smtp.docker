@@ -1,5 +1,5 @@
 FROM ghcr.io/rekgrpth/gost.docker
-WORKDIR "${HOME}"
+CMD [ "smtpd", "-d" ]
 ENV GROUP=smtpd \
     USER=smtpd
 RUN set -eux; \
@@ -30,7 +30,7 @@ RUN set -eux; \
     ./configure; \
     make -j"$(nproc)" install; \
     cd /; \
-    apk add --no-cache --virtual .postgresql-rundeps \
+    apk add --no-cache --virtual .smtp-rundeps \
         gawk \
         opensmtpd \
         $(scanelf --needed --nobanner --format '%n#p' --recursive /usr/local | tr ',' '\n' | sort -u | while read -r lib; do test ! -e "/usr/local/lib/$lib" && echo "so:$lib"; done) \
@@ -41,9 +41,5 @@ RUN set -eux; \
     find /usr -type f -name "*.a" -delete; \
     find /usr -type f -name "*.la" -delete; \
     rm -rf "${HOME}" /usr/share/doc /usr/share/man /usr/local/share/doc /usr/local/share/man; \
-    sed -i 's|table aliases|#table aliases|g' /etc/smtpd/smtpd.conf; \
-    sed -i 's|listen on lo|listen on 0.0.0.0|g' /etc/smtpd/smtpd.conf; \
-    sed -i 's|action "local" maildir alias|#action "local" maildir alias|g' /etc/smtpd/smtpd.conf; \
-    sed -i 's|match from local for any action "relay"|match from any for any action "relay"|g' /etc/smtpd/smtpd.conf; \
-    sed -i 's|match for local action "local"|#match for local action "local"|g' /etc/smtpd/smtpd.conf; \
     echo done
+ADD etc /etc
