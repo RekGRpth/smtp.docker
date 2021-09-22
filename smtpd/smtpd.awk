@@ -73,10 +73,10 @@ BEGIN {
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
-    val[1] = $7
-    val[2] = $8
-    val[3] = $9
-    array[length(array)+1] = val
+    len = length(array)
+    array[len + 1][1] = $7
+    array[len + 1][2] = $8
+    array[len + 1][3] = $9
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
