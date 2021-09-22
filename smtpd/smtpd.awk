@@ -42,6 +42,9 @@ function update(session) {
         val[1] = message[session]
         val[2] = array[message[session], i, 1]
         val[3] = array[message[session], i, 2]
+        print(val[1]) > "/dev/stderr"
+        print(val[2]) > "/dev/stderr"
+        print(val[3]) > "/dev/stderr"
         res = pg_execprepared(conn, email, 3, val)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
@@ -63,8 +66,7 @@ function update(session) {
         delete array[message[session], i, 2]
     }
     delete len[message[session]]
-    delete message[session]
-    delete protocol[session]
+    delete disconnect[message[session]]
 }
 BEGIN {
     FS = "|"
@@ -98,6 +100,7 @@ BEGIN {
 }
 "report|smtp-in|tx-begin" == $1_$4_$5 {
     message[$6] = $7
+    disconnect[$7] = false
     next
 }
 "report|smtp-in|tx-reset" == $1_$4_$5 {
@@ -105,8 +108,13 @@ BEGIN {
     next
 }
 "report|smtp-in|link-disconnect" == $1_$4_$5 {
-    delete message[$6]
-    delete protocol[$6]
+    if (disconnect[message[$6]]) {
+        update($6)
+    } else {
+        disconnect[message[$6]] = true
+    }
+#    delete message[$6]
+#    delete protocol[$6]
     next
 }
 "report|smtp-out|protocol-client" == $1_$4_$5 {
@@ -115,7 +123,8 @@ BEGIN {
 }
 "report|smtp-out|protocol-server" == $1_$4_$5 {
     protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
-    if (match($7, /<(.+)>/, m)) {
+    if (match($7, /^550.+<(.+)>/, m)) {
+        print(m[1]) > "/dev/stderr"
         array[message[$6], len[message[$6]], 1] = "permfail"
         array[message[$6], len[message[$6]], 2] = m[1]
     }
@@ -135,7 +144,13 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    update($6)
+    if (disconnect[message[$6]]) {
+        update($6)
+    } else {
+        disconnect[message[$6]] = true
+    }
+#    delete message[$6]
+#    delete protocol[$6]
     next
 }
 END {
