@@ -17,9 +17,6 @@ function connect() {
         exit 1
     }
 }
-function push(array, element) {
-    array[length(array)+1] = element
-}
 BEGIN {
     FS = "|"
     OFS = FS
@@ -79,7 +76,7 @@ BEGIN {
     val[1] = $7
     val[2] = $8
     val[3] = $9
-    push(array[message[$6]], val)
+    array[length(array)+1] = val
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
