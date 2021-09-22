@@ -4,14 +4,14 @@ function connect() {
         print("!pg_connect") > "/dev/stderr"
         exit 1
     }
-    stmtName = pg_prepare(conn, "UPDATE task SET output = output||'\r\n'||$1 WHERE output LIKE $2||'%'")
-    if (!stmtName) {
+    task = pg_prepare(conn, "UPDATE task SET output = output||'\r\n'||$1 WHERE output LIKE $2||'%'")
+    if (!task) {
         print(pg_errormessage(conn)) > "/dev/stderr"
         print("!pg_prepare") > "/dev/stderr"
         exit 1
     }
-    stmtName2 = pg_prepare(conn, "UPDATE history SET result = $1 WHERE recipient = $2 AND email_id = (SELECT id FROM email WHERE message_id = ('x'||$3)::bit(28)::int)")
-    if (!stmtName2) {
+    history = pg_prepare(conn, "UPDATE history SET result = $1 WHERE recipient = $2 AND email_id = (SELECT id FROM email WHERE message_id = ('x'||$3)::bit(28)::int)")
+    if (!history) {
         print(pg_errormessage(conn)) > "/dev/stderr"
         print("!pg_prepare") > "/dev/stderr"
         exit 1
@@ -77,13 +77,13 @@ BEGIN {
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
-    paramValues[1] = $8
-    paramValues[2] = $9
-    paramValues[3] = $7
-    res = pg_execprepared(conn, stmtName2, 3, paramValues)
+    val[1] = $8
+    val[2] = $9
+    val[3] = $7
+    res = pg_execprepared(conn, history, 3, val)
     if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
         connect()
-        res = pg_execprepared(conn, stmtName2, nParams, paramValues)
+        res = pg_execprepared(conn, history, 3, val)
     }
     print(res) > "/dev/stderr"
     if (res) {
@@ -94,17 +94,17 @@ BEGIN {
     } else {
         print(pg_errormessage(conn)) > "/dev/stderr"
     }
-    delete paramValues
+    delete val
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
     if (protocol[message[session]]) {
-        paramValues[1] = protocol[session]
-        paramValues[2] = protocol[message[session]]
-        res = pg_execprepared(conn, stmtName, 2, paramValues)
+        val[1] = protocol[session]
+        val[2] = protocol[message[session]]
+        res = pg_execprepared(conn, task, 2, val)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
-            res = pg_execprepared(conn, stmtName, nParams, paramValues)
+            res = pg_execprepared(conn, task, 2, val)
         }
         print(res) > "/dev/stderr"
         if (res) {
@@ -115,7 +115,7 @@ BEGIN {
         } else {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
-        delete paramValues
+        delete val
         delete protocol[message[session]]
     }
     delete message[session]
