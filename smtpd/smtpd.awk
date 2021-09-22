@@ -137,10 +137,6 @@ BEGIN {
     connected[$7] ++
     next
 }
-"report|smtp-out|tx-reset" == $1_$4_$5 {
-    output[message[$6]] = sprintf("%s%s\r\n", output[message[$6]], output[$6])
-    next
-}
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
     len[$7] ++
     array[$7, len[$7], 1] = $8
@@ -148,6 +144,7 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
+    output[message[$6]] = sprintf("%s%s\r\n", output[message[$6]], output[$6])
     if (connected[message[$6]] == 1) {
         update(message[$6])
     } else {
