@@ -66,6 +66,10 @@ BEGIN {
 }
 "report|smtp-out|protocol-server" == $1_$4_$5 {
     protocol[$6] = sprintf("%s%s\r\n", protocol[$6], $7)
+    if (match($7, /<(.+)>/, m)) {
+        array[$7, len[$7], 1] = "permfail"
+        array[$7, len[$7], 2] = m[1]
+    }
     next
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
