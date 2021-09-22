@@ -98,7 +98,7 @@ BEGIN {
     delete paramValues
     next
 }
-"report|smtp-out|tx-reset" == $1_$4_$5 {
+"report|smtp-out|link-disconnect" == $1_$4_$5 {
     if (status_message[message_session[session]]) {
         nParams = 2
         paramValues[1] = status_session[session]
