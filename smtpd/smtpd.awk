@@ -70,6 +70,9 @@ BEGIN {
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
     message[$6] = $7
+    next
+}
+"report|smtp-out|tx-envelope" == $1_$4_$5 {
     len[$7] ++
     next
 }
