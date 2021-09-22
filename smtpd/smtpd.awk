@@ -70,13 +70,13 @@ BEGIN {
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
     message[$6] = $7
+    len[$7] ++
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
-    len = length(array)
-    array[len + 1][1] = $7
-    array[len + 1][2] = $8
-    array[len + 1][3] = $9
+    array[$7, len[$7], 0] = $7
+    array[$7, len[$7], 1] = $8
+    array[$7, len[$7], 2] = $9
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
@@ -100,8 +100,10 @@ BEGIN {
         delete val
         delete protocol[message[$6]]
     }
-    for (i = 1; i <= length(array[message[$6]]); i++) {
-        val = array[message[$6]][i]
+    for (i = 1; i <= len[message[$6]]; i++) {
+        val[0] = array[message[$6], i, 0]
+        val[1] = array[message[$6], i, 1]
+        val[2] = array[message[$6], i, 2]
         res = pg_execprepared(conn, email, 3, val)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
@@ -117,8 +119,11 @@ BEGIN {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
         delete val
+        delete array[message[$6], i, 0]
+        delete array[message[$6], i, 1]
+        delete array[message[$6], i, 2]
     }
-    delete array[message[$6]]
+    delete len[message[$6]]
     delete message[$6]
     delete protocol[$6]
     next
