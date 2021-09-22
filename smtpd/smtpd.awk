@@ -59,11 +59,11 @@ BEGIN {
     delete status_session[session]
     next
 }
-"report|smtp-out|protocol-client" == $1_$4_$5 {
+"report|protocol-server" == $1_$5 {
     status_session[session] = sprintf("%s%s\r\n", status_session[session], $7)
     next
 }
-"report|protocol-server" == $1_$5 {
+"report|smtp-out|protocol-client" == $1_$4_$5 {
     status_session[session] = sprintf("%s%s\r\n", status_session[session], $7)
     next
 }
