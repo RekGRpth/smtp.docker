@@ -38,6 +38,7 @@ function update(message) {
         delete val
         delete where[message]
     }
+    delete output[message]
     for (i = 1; i <= len[message]; i++) {
         val[1] = message
         val[2] = array[message, i, 1]
@@ -66,6 +67,7 @@ function update(message) {
         delete array[message, i, 2]
     }
     delete len[message]
+    delete disconnect[message]
 }
 BEGIN {
     FS = "|"
@@ -106,6 +108,11 @@ BEGIN {
     next
 }
 "report|smtp-in|link-disconnect" == $1_$4_$5 {
+    if (disconnect[message[$6]]) {
+        update(message[$6])
+    } else {
+        disconnect[message[$6]] = 1
+    }
     delete message[$6]
     delete where[$6]
     next
@@ -141,7 +148,11 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    update(message[$6])
+    if (disconnect[message[$6]]) {
+        update(message[$6])
+    } else {
+        disconnect[message[$6]] = 1
+    }
     delete message[$6]
     delete output[$6]
     next
