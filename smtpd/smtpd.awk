@@ -47,28 +47,33 @@ BEGIN {
     event = $5
     session = $6
 }
-"report|smtp-in|tx-begin" == $1_$4_$5 {
-    message_session[session] = $7
+"report|smtp-in|protocol-server" == $1_$4_$5 {
+    status[session] = sprintf("%s%s\r\n", status[session], $7)
     next
 }
-"report|smtp-in|protocol-server" == $1_$4_$5 {
-    status_message_in[message_session[session]] = sprintf("%s%s\r\n", status_message_in[message_session[session]], $7)
+"report|smtp-in|tx-begin" == $1_$4_$5 {
+    message[session] = $7
+    next
+}
+"report|smtp-in|tx-reset" == $1_$4_$5 {
+    status[message[session]] = status[session]
     next
 }
 "report|smtp-in|link-disconnect" == $1_$4_$5 {
-    delete message_session[session]
+    delete message[session]
+    delete status[session]
     next
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
-    message_session[session] = $7
+    message[session] = $7
     next
 }
 "report|smtp-out|protocol-client" == $1_$4_$5 {
-    status_session_out[session] = sprintf("%s%s\r\n", status_session_out[session], $7)
+    status[session] = sprintf("%s%s\r\n", status[session], $7)
     next
 }
 "report|smtp-out|protocol-server" == $1_$4_$5 {
-    status_session_out[session] = sprintf("%s%s\r\n", status_session_out[session], $7)
+    status[session] = sprintf("%s%s\r\n", status[session], $7)
     next
 }
 "report|smtp-out|tx-rcpt" == $1_$4_$5 {
@@ -93,9 +98,9 @@ BEGIN {
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
-    if (status_message_in[message_session[session]]) {
-        paramValues[1] = status_session_out[session]
-        paramValues[2] = status_message_in[message_session[session]]
+    if (status[message[session]]) {
+        paramValues[1] = status[session]
+        paramValues[2] = status[message[session]]
         res = pg_execprepared(conn, stmtName, 2, paramValues)
         if (res == "ERROR BADCONN PGRES_FATAL_ERROR") {
             connect()
@@ -111,10 +116,10 @@ BEGIN {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
         delete paramValues
-        delete status_message_in[message_session[session]]
+        delete status[message[session]]
     }
-    delete status_session_out[session]
-    delete message_session[session]
+    delete message[session]
+    delete status[session]
     next
 }
 END {
