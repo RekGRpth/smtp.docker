@@ -119,6 +119,8 @@ BEGIN {
             print(pg_errormessage(conn)) > "/dev/stderr"
         }
         delete val
+    }
+    for (i = 1; i <= len[message[$6]]; i++) {
         delete array[message[$6], i, 1]
         delete array[message[$6], i, 2]
         delete array[message[$6], i, 3]
