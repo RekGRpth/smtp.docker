@@ -47,17 +47,17 @@ BEGIN {
     event = $5
     session = $6
 }
+"report|smtp-in|tx-begin" == $1_$4_$5 {
+    message = $7
+    message_session[session] = message
+    next
+}
 "report|smtp-out|protocol-client" == $1_$4_$5 {
     status_session[session] = sprintf("%s%s\r\n", status_session[session], $7)
     next
 }
 "report|protocol-server" == $1_$5 {
     status_session[session] = sprintf("%s%s\r\n", status_session[session], $7)
-    next
-}
-"report|smtp-in|tx-begin" == $1_$4_$5 {
-    message = $7
-    message_session[session] = message
     next
 }
 "report|smtp-out|tx-begin" == $1_$4_$5 {
