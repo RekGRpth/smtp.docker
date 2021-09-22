@@ -52,6 +52,13 @@ BEGIN {
     message_session[session] = message
     next
 }
+"report|smtp-in|link-disconnect" == $1_$4_$5 {
+    if (message_session[session]) {
+        status_message[message_session[session]] = status_session[session]
+    }
+    delete status_session[session]
+    next
+}
 "report|smtp-out|protocol-client" == $1_$4_$5 {
     status_session[session] = sprintf("%s%s\r\n", status_session[session], $7)
     next
@@ -89,13 +96,6 @@ BEGIN {
         print(pg_errormessage(conn)) > "/dev/stderr"
     }
     delete paramValues
-    next
-}
-"report|smtp-in|link-disconnect" == $1_$4_$5 {
-    if (message_session[session]) {
-        status_message[message_session[session]] = status_session[session]
-    }
-    delete status_session[session]
     next
 }
 "report|smtp-out|link-disconnect" == $1_$4_$5 {
