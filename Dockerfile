@@ -8,6 +8,7 @@ RUN set -eux; \
     apk add --no-cache --virtual .build-deps \
         autoconf \
         automake \
+        file \
         gawk \
         gcc \
         gettext-dev \
