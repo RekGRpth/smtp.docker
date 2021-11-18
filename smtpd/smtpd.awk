@@ -15,9 +15,6 @@ BEGIN {
     OFS = FS
     connect()
 }
-{
-    print($0) > "/dev/stderr"
-}
 "config|subsystem|smtp-in" == $0 {
     print("register|report|smtp-in|*")
     next
