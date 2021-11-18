@@ -21,11 +21,9 @@ BEGIN {
     _ = FS
     connect()
 }
-{
-    print($0) > "/dev/stderr"
-}
-"config|subsystem" == $1_$2 {
-    print("register", "report", $3, "*")
+"config|subsystem|smtp-out" == $0 {
+    print("register|report|smtp-out|tx-rcpt")
+    print("register|report|smtp-out|tx-rollback")
     next
 }
 "config|ready" == $0 {
