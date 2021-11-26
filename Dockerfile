@@ -13,10 +13,10 @@ RUN set -eux; \
         gcc \
         gettext-dev \
         git \
+        libpq-dev \
         libtool \
         make \
         musl-dev \
-        postgresql-dev \
         texinfo \
     ; \
     mkdir -p "${HOME}/src"; \
