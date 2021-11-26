@@ -28,7 +28,7 @@ RUN set -eux; \
     make -j"$(nproc)" install; \
     cd "${HOME}/src/gawkextlib/pgsql"; \
     autoreconf -vif; \
-    ./configure; \
+    ./configure --with-libpq="$(pg_config --includedir)"; \
     make -j"$(nproc)" install; \
     cd /; \
     apk add --no-cache --virtual .smtp-rundeps \
