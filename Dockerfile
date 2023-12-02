@@ -1,8 +1,15 @@
-FROM ghcr.io/rekgrpth/gost.docker:latest
+FROM alpine:latest
+ADD bin /usr/local/bin
+ENTRYPOINT [ "docker_entrypoint.sh" ]
+ENV HOME=/home
+MAINTAINER RekGRpth
+WORKDIR "$HOME"
 CMD [ "smtpd", "-d" ]
 ENV GROUP=smtpd \
     USER=smtpd
 RUN set -eux; \
+    ln -fs su-exec /sbin/gosu; \
+    chmod +x /usr/local/bin/*.sh; \
     apk update --no-cache; \
     apk upgrade --no-cache; \
     apk add --no-cache --virtual .build \
@@ -32,8 +39,15 @@ RUN set -eux; \
     make -j"$(nproc)" install; \
     cd /; \
     apk add --no-cache --virtual .smtp \
+        busybox-extras \
+        busybox-suid \
+        ca-certificates \
         gawk \
+        musl-locales \
         opensmtpd \
+        shadow \
+        su-exec \
+        tzdata \
         $(scanelf --needed --nobanner --format '%n#p' --recursive /usr/local | tr ',' '\n' | grep -v "^$" | grep -v -e libcrypto | sort -u | while read -r lib; do test -z "$(find /usr/local/lib -name "$lib")" && echo "so:$lib"; done) \
     ; \
     find /usr/local/bin -type f -exec strip '{}' \;; \
